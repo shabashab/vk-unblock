@@ -22,6 +22,6 @@
    "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAmd993eNB8S8xkuptfqh0xfmps4nLB7RxD3+Wr1knVIa71hU+BATd9CY/pE6/g30Qs4tVOKIv5Xnf7DEE7xhcvsl7IP6jSk6wfmtSsLEQGlRJb9yKc/ZBP8WFVQTIJjTVXjYSAjQZRZsD6CeQ8cZaNkQXbwX3UYGjc1uFQNGQM423IS6vtPHaabnFJrvFYmoi/nlaQAKmuVgzRpkif6zDZ4Lri589RhSOYVFlUTxuJdhIPCypFHJxgOhzz28RKqnCZFc6xT1E4KC6MXSB9WFcjfhtXHQiMo6zmzGFc1aNWyVsPzshyviMXUWviZtD/0sIHIIB5HuzvkPCVXq6dqnFHwIDAQAB",
    "manifest_version": 2,
    "name": "__MSG_name__",
-   "permissions": ["webRequest", "proxy", "storage", "tabs", "https://check.proxy-config.com/*", "https://*.vk.com/*", "management", "cookies"],
+   "permissions": ["webRequest", "proxy", "storage", "https://check.proxy-config.com/*", "https://*.vk.com/*", "management", "cookies"],
    "version": "0.1"
 }
