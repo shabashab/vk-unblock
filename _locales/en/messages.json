@@ -1,0 +1,35 @@
+{
+   "conflict_msg": {
+      "message": "Another Chrome extension that controls your proxy settings disrupts correct operation of Ok Unblock"
+   },
+   "desc": {
+      "message": "Fast and safe access to blocked websites. Supported Vkontakte, Odnoklassniki, Yandex, Mailru, Kinopoisk, etc."
+   },
+   "disable_conflicted_exts": {
+      "message": "Disable another extension"
+   },
+   "fast_access": {
+      "message": "Fast access"
+   },
+   "kinopoisk_fast_btn": {
+      "message": "Kinopoisk"
+   },
+   "mailru_fast_btn": {
+      "message": "MailRu"
+   },
+   "name": {
+      "message": "VK UnBlock. Works fast."
+   },
+   "status_ok": {
+      "message": "Connection to this site is proxied by the extension"
+   },
+   "title": {
+      "message": "VK UnBlock"
+   },
+   "vk_fast_btn": {
+      "message": "Vkontakte"
+   },
+   "yandex_fast_btn": {
+      "message": "Yandex"
+   }
+}
