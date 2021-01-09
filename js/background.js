@@ -10,17 +10,9 @@ var App = {
     return "https://check.proxy-config.com/";
   },
   getCfgUrl: function () {
-    var url =
-      App.getVpnCfgDomain() +
-      "configg.json?" +
-      "&version=" +
-      (chrome.runtime.getManifest && chrome.runtime.getManifest()
-        ? chrome.runtime.getManifest().version
-        : "-") +
-      "&it=" +
-      (localStorage.installedTime || "") +
-      "&r=" +
-      Math.random();
+    let fileName = "configg.json";
+    let url = this.getVpnCfgDomain() + fileName;
+
     return url;
   },
   getRandom: function (a, b) {
