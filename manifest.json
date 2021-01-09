@@ -2,6 +2,9 @@
    "background": {
       "scripts": ["js/background.js"]
    },
+   "web_accessible_resources": [
+      "data/domains.json"
+   ],
    "browser_action": {
       "default_icon": {
          "128": "img/vk_128.png",
