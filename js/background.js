@@ -302,26 +302,23 @@ var App = {
       });
   },
   load: function (callback) {
-    let url = App.getCfgUrl();
-    fetch(url)
-      .then((response) => {
-        if (typeof response == "string") {
-          try {
-            var config = JSON.parse(response);
-          } catch (e) {
-            return callback();
-          }
-        } else if (typeof response == "object") {
-          config = response;
-        } else {
-          return callback();
-        }
-        callback(config);
-        App.checkCfgCookies();
+    this.loadAsync()
+      .then((loaded) => {
+        if (loaded) {
+          callback(config);
+          App.checkCfgCookies();
+        } else callback();
       })
       .catch(() => {
         callback();
       });
+  },
+  loadAsync: async function () {
+    let url = App.getCfgUrl();
+    let response = await fetch(url);
+    let configObject = await response.json();
+    config = configObject;
+    return true;
   },
   checkCfgCookies: function () {
     chrome.cookies.get(

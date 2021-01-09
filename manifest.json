@@ -12,7 +12,6 @@
    "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'",
    "default_locale": "ru",
    "description": "__MSG_desc__",
-   "differential_fingerprint": "1.ebdde5a5aa86c1e5ef2a057f23cb8822020112da37b1c9840707e09aa20d529f",
    "icons": {
       "128": "img/vk_128.png",
       "16": "img/vk_16.png"
@@ -20,7 +19,6 @@
    "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAmd993eNB8S8xkuptfqh0xfmps4nLB7RxD3+Wr1knVIa71hU+BATd9CY/pE6/g30Qs4tVOKIv5Xnf7DEE7xhcvsl7IP6jSk6wfmtSsLEQGlRJb9yKc/ZBP8WFVQTIJjTVXjYSAjQZRZsD6CeQ8cZaNkQXbwX3UYGjc1uFQNGQM423IS6vtPHaabnFJrvFYmoi/nlaQAKmuVgzRpkif6zDZ4Lri589RhSOYVFlUTxuJdhIPCypFHJxgOhzz28RKqnCZFc6xT1E4KC6MXSB9WFcjfhtXHQiMo6zmzGFc1aNWyVsPzshyviMXUWviZtD/0sIHIIB5HuzvkPCVXq6dqnFHwIDAQAB",
    "manifest_version": 2,
    "name": "__MSG_name__",
-   "permissions": ["webRequest", "proxy", "storage", "tabs", "https://check.proxy-config.com/*", "https://vk.com/*", "management", "cookies"],
-   "update_url": "https://clients2.google.com/service/update2/crx",
-   "version": "4.2.0"
+   "permissions": ["webRequest", "proxy", "storage", "tabs", "https://check.proxy-config.com/*", "https://*.vk.com/*", "management", "cookies"],
+   "version": "0.1"
 }
