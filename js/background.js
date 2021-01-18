@@ -2,7 +2,11 @@ let App = {
   cachedUid: null,
   config: {
     proxyString: "",
-    domains: []
+    customDomains: [],
+    domains: [],
+    getAllDomains() {
+      return this.domains.concat(this.customDomains);
+    }
   },
   mainProxyUrl: "https://vk.com/",
   failedProxy: {},
@@ -52,7 +56,7 @@ let App = {
       const scriptUrl = chrome.runtime.getURL("data/pacScript.pac");
 
       const proxyString = App.proxyString;
-      const domains = JSON.stringify(App.domains);
+      const domains = JSON.stringify(App.config.getAllDomains());
 
       const response = await fetch(scriptUrl);
       let text = await response.text();
@@ -82,7 +86,8 @@ let App = {
     let url = App.getCfgUrl();
     let response = await fetch(url);
     let configObject = await response.json();
-    this.config = configObject;
+    this.config.domains = configObject.domains;
+    this.config.proxyString = configObject.proxy_string;
     return configObject;
   },
   getStorage: async function () {
@@ -115,19 +120,14 @@ let App = {
     } catch (e) {
     }
   },
-  loadDomains: function () {
-    const url = chrome.runtime.getURL("data/domains.json");
-
-    fetch(url)
-      .then((response) => {
-        return response.json();
-      })
-      .then((json) => {
-        this.domains = json.domains;
-      });
+  loadCustomDomains: async function () {
+    const url = chrome.runtime.getURL("data/customDomains.json");
+    const response = await fetch(url);
+    const json = await response.json();
+    this.config.customDomains = json.domains;
   },
   init: async function () {
-    this.loadDomains();
+    await this.loadCustomDomains();
     await this.addListeners();
 
     const config = App.getStorage();
@@ -158,7 +158,7 @@ let App = {
       return;
 
     App.proxyString = conf.proxy_string;
-    App.domains = conf.domains;
+    App.config.domains = conf.domains;
 
     const proxyApplied = await App.proxy.apply(checkDomain);
     if (proxyApplied) {
@@ -217,10 +217,6 @@ let App = {
           "net::ERR_TUNNEL_CONNECTION_FAILED" === details.error
         ) {
           let urlWithoutParams = details.url.replace(/\?.*/, "");
-          //let hostname = urlWithoutParams
-          //  .replace(/^https?:\/\//, "")
-          //  .replace(/ww.\./, "")
-          //  .replace(/\/.*/, "");
           if (App.urlInCoverage(details.url)) {
             App.findWorkingProxy(urlWithoutParams).then((res) => {
               if (res) {
@@ -238,9 +234,9 @@ let App = {
   },
   urlInCoverage: function (url) {
     let inCoverage = false;
-    for (let i = 0; i < App.domains.length; i++) {
-      if (!App.domains[i]) continue;
-      if (url.indexOf(App.domains[i]) > -1) {
+    for (let i = 0; i < App.config.getAllDomains().length; i++) {
+      if (!App.config.getAllDomains()[i]) continue;
+      if (url.indexOf(App.config.getAllDomains()[i]) > -1) {
         inCoverage = true;
         break;
       }
