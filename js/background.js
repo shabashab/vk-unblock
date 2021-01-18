@@ -1,7 +1,9 @@
-var App = {
+let App = {
   cachedUid: null,
-  domains: [],
-  proxyString: "",
+  config: {
+    proxyString: "",
+    domains: []
+  },
   mainProxyUrl: "https://vk.com/",
   failedProxy: {},
   triedProxy: {},
@@ -11,121 +13,107 @@ var App = {
   },
   getCfgUrl: function () {
     let fileName = "configg.json";
-    let url = this.getVpnCfgDomain() + fileName;
-
-    return url;
-  },
-  getPac: function () {
-    var a = JSON.stringify(App.domains);
-    return {
-      mode: "pac_script",
-      pacScript: {
-        data:
-          `function FindProxyForURL(url, host) {
-        var proxyString = '` +
-          App.proxyString +
-          `';
-        var domains = ` +
-          a +
-          `;
-        
-        for(i = 0; i < domains.length; i++){
-         if (shExpMatch(host, domains[i])) {
-          return proxyString;
-         }
-        }
-        return "DIRECT";
-       }`,
-      },
-    };
+    return this.getVpnCfgDomain() + fileName;
   },
   proxy: {
     scope: "regular",
-    apply: function (checkDomain, cb) {
-      const a = this._onBeforeApply();
-      a.then(() => {
+    apply: async function (checkDomain) {
+      await this.clearProxySettings();
+      const settings = await this.getProxySettings();
+      await this.setProxySettings(settings);
+
+      const connectivityStatus = await App.checkConnect({url: checkDomain});
+      App.loadReserve();
+
+      return connectivityStatus;
+    },
+    setProxySettings: async function (value) {
+      return new Promise((resolve) => {
         chrome.proxy.settings.set(
           {
-            value: App.getPac(),
-            scope: a.scope,
+            value: value,
+            scope: this.scope
           },
-          () => {
-            App.checkConnect(
-              {
-                url: checkDomain,
-              },
-              function (res) {
-                cb(res);
-              }
-            );
-            App.loadReserve();
-          }
-        );
+          () => resolve()
+        )
       });
     },
-    _onBeforeApply() {
-      const a = this;
-      return new Promise((b) =>
+    clearProxySettings: async function () {
+      return new Promise((resolve) =>
         chrome.proxy.settings.clear(
           {
-            scope: a.scope,
+            scope: this.scope,
           },
-          b.bind(a)
+          () => resolve()
         )
       );
     },
+    getProxySettings: async function () {
+      const scriptUrl = chrome.runtime.getURL("data/pacScript.pac");
+
+      const proxyString = App.proxyString;
+      const domains = JSON.stringify(App.domains);
+
+      const response = await fetch(scriptUrl);
+      let text = await response.text();
+
+      text = text.replace(/\\\\proxyString\\\\/, proxyString);
+      text = text.replace(/'\\\\domains\\\\'/, domains);
+
+      return {
+        mode: "pac_script",
+        pacScript: {
+          data: text
+        },
+      };
+
+    },
   },
-  checkConnect: function (opts, cb) {
-    var url = (opts && opts.url) || App.mainProxyUrl;
-    fetch(url)
-      .then(() => {
-        cb(true);
-      })
-      .catch(() => {
-        cb(false);
-      });
-  },
-  load: function (callback) {
-    this.loadAsync()
-      .then((loaded) => {
-        if (loaded) {
-          callback(config);
-        } else callback();
-      })
-      .catch(() => {
-        callback();
-      });
+  checkConnect: async function (opts) {
+    const url = (opts && opts.url) || App.mainProxyUrl;
+    try {
+      const response = await fetch(url);
+      if (response && response.ok) return true;
+    } catch (e) {
+      return false;
+    }
   },
   loadAsync: async function () {
     let url = App.getCfgUrl();
     let response = await fetch(url);
     let configObject = await response.json();
-    config = configObject;
-    return true;
+    this.config = configObject;
+    return configObject;
   },
-  getStorage: function (callback) {
-    chrome.storage.local.get("config", function (data) {
-      callback(data.config || {});
+  getStorage: async function () {
+    return new Promise((resolve) => {
+      chrome.storage.local.get("config", function (data) {
+        resolve(data.config || {});
+      });
     });
   },
-  setStorage: function (config, callback) {
-    chrome.storage.local.set(
-      {
-        config: config,
-      },
-      function () {
-        typeof callback == "function" && callback(true);
-      }
-    );
+  setStorage: async function (config) {
+    return new Promise(((resolve) => {
+      chrome.storage.local.set(
+        {
+          config: config,
+        },
+        function () {
+          resolve(true);
+        }
+      );
+    }));
   },
   loadReserve: function () {
     if (!App.proxyReserve) return;
     if (App.reservedTry) return;
     App.reservedTry = true;
     try {
-      var proxySettings = JSON.parse(atob(App.proxyReserve));
-      if (!proxySettings["data"]) return;
-    } catch (e) {}
+      //const proxySettings =
+        JSON.parse(atob(App.proxyReserve));
+      //if (!proxySettings["data"]) return;
+    } catch (e) {
+    }
   },
   loadDomains: function () {
     const url = chrome.runtime.getURL("data/domains.json");
@@ -138,62 +126,56 @@ var App = {
         this.domains = json.domains;
       });
   },
-  init: function () {
+  init: async function () {
     this.loadDomains();
-    this.addListeners();
-    App.getStorage(function (config) {
-      if (config.proxy_string && config.domains) {
-        App.proxyString = config.proxy_string;
-        App.domains = config.domains;
-        App.proxy.apply(App.mainProxyUrl, function (res) {
-          if (!res) {
-            App.loadAndApply(App.mainProxyUrl);
-          }
-        });
-      } else {
-        App.loadAndApply(App.mainProxyUrl);
+    await this.addListeners();
+
+    const config = App.getStorage();
+
+    if (config.proxy_string && config.domains) {
+      App.config.proxyString = config.proxy_string;
+      App.config.domains = config.domains;
+
+      const proxyApplyResult = await App.proxy.apply(App.mainProxyUrl);
+      if (!proxyApplyResult) {
+        await App.loadAndApply(App.mainProxyUrl);
       }
-      if (config.proxy_reserve) {
-        App.proxyReserve = config.proxy_reserve;
-      } else {
-        setTimeout(function () {
-          App.loadProxyReserve();
-        }, 20 * 1000);
-      }
-    });
+    } else {
+      await App.loadAndApply(App.mainProxyUrl);
+    }
+
+    if (config.proxy_reserve) {
+      App.proxyReserve = config.proxy_reserve;
+    } else {
+      setTimeout(function () {
+        App.loadProxyReserve();
+      }, 20 * 1000);
+    }
   },
-  loadAndApply: function (checkDomain, cb) {
-    App.load(function (conf) {
-      if (!conf) return typeof cb == "function" && cb();
+  loadAndApply: async function (checkDomain) {
+    const conf = await App.loadAsync();
+    if (!conf.proxy_string || !conf.domains)
+      return;
 
-      //      !App.proxyReserve &&
-      //        conf.proxy_reserve &&
-      //        (App.proxyReserve = conf.proxy_reserve);
+    App.proxyString = conf.proxy_string;
+    App.domains = conf.domains;
 
-      if (!conf.proxy_string || !conf.domains)
-        return typeof cb == "function" && cb();
-
-      App.proxyString = conf.proxy_string;
-      App.domains = conf.domains;
-
-      App.proxy.apply(checkDomain, function (res) {
-        if (res) {
-          App.setStorage({
-            proxy_string: conf.proxy_string,
-            domains: conf.domains,
-            proxy_reserve: App.proxyReserve || conf.proxy_reserve,
-          });
-        }
-        typeof cb == "function" && cb(res);
+    const proxyApplied = await App.proxy.apply(checkDomain);
+    if (proxyApplied) {
+      await App.setStorage({
+        proxy_string: conf.proxy_string,
+        domains: conf.domains,
+        proxy_reserve: App.proxyReserve || conf.proxy_reserve,
       });
-    });
+    }
+    return proxyApplied;
   },
   searchProxyInProgress: false,
   globalSearchAttemptsCount: 0,
-  findWorkingProxy: function (forUrl, callback, localSearchAttemptsCount) {
-    if (App.globalSearchAttemptsCount > 15) return callback(false);
+  findWorkingProxy: async function (forUrl, localSearchAttemptsCount) {
+    if (App.globalSearchAttemptsCount > 15) return false;
     if (!localSearchAttemptsCount && App.searchProxyInProgress) {
-      return callback(false);
+      return false;
     }
     App.searchProxyInProgress = true;
     localSearchAttemptsCount = localSearchAttemptsCount || 0;
@@ -204,47 +186,43 @@ var App = {
       }, 3600 * 1000);
     }
     App.globalSearchAttemptsCount++;
-    App.loadAndApply(forUrl, function (res) {
-      if (res) {
-        App.searchProxyInProgress = false;
-        callback(true);
-      } else if (localSearchAttemptsCount < 7) {
-        setTimeout(function () {
-          App.findWorkingProxy(forUrl, callback, localSearchAttemptsCount);
-        }, 1000);
-      } else {
-        App.searchProxyInProgress = false;
-        callback(false);
-      }
-    });
-  },
-  loadProxyReserve: function () {
-    if (!App.proxyReserve) {
-      App.load(function (loadedConfig) {
-        if (loadedConfig && loadedConfig.proxy_reserve) {
-          App.proxyReserve = loadedConfig.proxy_reserve;
-          App.getStorage(function (config) {
-            config.proxy_reserve = loadedConfig.proxy_reserve;
-            App.setStorage(config);
-          });
-        }
-      });
+    const result = await App.loadAndApply(forUrl);
+    if (result) {
+      App.searchProxyInProgress = false;
+      return true;
+    } else if (localSearchAttemptsCount < 7) {
+      setTimeout(function () {
+        App.findWorkingProxy(forUrl, localSearchAttemptsCount);
+      }, 1000);
+    } else {
+      App.searchProxyInProgress = false;
+      return false;
     }
   },
-  addListeners: function () {
+  loadProxyReserve: async function () {
+    if (!App.proxyReserve) {
+      const loadedConfig = await App.loadAsync();
+      if (loadedConfig && loadedConfig.proxy_reserve) {
+        const config = await App.getStorage();
+        config.proxy_reserve = loadedConfig.proxy_reserve;
+        await App.setStorage(config);
+      }
+    }
+  },
+  addListeners: async function () {
     chrome.webRequest.onErrorOccurred.addListener(
       function (details) {
         if (
           "net::ERR_CONNECTION_TIMED_OUT" === details.error ||
           "net::ERR_TUNNEL_CONNECTION_FAILED" === details.error
         ) {
-          var urlWithoutParams = details.url.replace(/\?.*/, "");
-          var hostname = urlWithoutParams
-            .replace(/^https?:\/\//, "")
-            .replace(/ww.\./, "")
-            .replace(/\/.*/, "");
+          let urlWithoutParams = details.url.replace(/\?.*/, "");
+          //let hostname = urlWithoutParams
+          //  .replace(/^https?:\/\//, "")
+          //  .replace(/ww.\./, "")
+          //  .replace(/\/.*/, "");
           if (App.urlInCoverage(details.url)) {
-            App.findWorkingProxy(urlWithoutParams, function (res) {
+            App.findWorkingProxy(urlWithoutParams).then((res) => {
               if (res) {
                 chrome.tabs.reload(details.tabId);
               }
@@ -259,8 +237,8 @@ var App = {
     );
   },
   urlInCoverage: function (url) {
-    var inCoverage = false;
-    for (var i = 0; i < App.domains.length; i++) {
+    let inCoverage = false;
+    for (let i = 0; i < App.domains.length; i++) {
       if (!App.domains[i]) continue;
       if (url.indexOf(App.domains[i]) > -1) {
         inCoverage = true;
@@ -270,4 +248,5 @@ var App = {
     return inCoverage;
   },
 };
-App.init();
+App.init().then(() => {
+}).catch((e) => console.log(e));
