@@ -31,6 +31,7 @@ let Proxy = {
   getProxySettings: async function () {
     const proxyString = Config.config.proxyString;
     const domains = JSON.stringify(Config.config.getAllDomains());
+    console.log(await PacScriptLoader.getPacScript(proxyString, domains));
 
     return {
       mode: "pac_script",

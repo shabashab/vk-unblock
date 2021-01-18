@@ -6,7 +6,7 @@ let PacScriptLoader = {
   },
   formatScript: async function(fileContent, proxyString, domains) {
     fileContent = fileContent.replace(/\\\\proxyString\\\\/, proxyString);
-    fileContent = fileContent.replace(/\\\\domains\\\\/, domains);
+    fileContent = fileContent.replace(/'\\\\domains\\\\'/, domains);
     return fileContent;
   },
   getPacScript: async function(proxyString, domains) {
