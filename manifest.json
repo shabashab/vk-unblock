@@ -1,6 +1,6 @@
 {
    "background": {
-      "scripts": ["js/configUrlResolver.js", "js/storage.js", "js/config.js", "js/background.js"]
+      "scripts": ["js/proxy.js", "js/configUrlResolver.js", "js/storage.js", "js/config.js", "js/background.js"]
    },
    "web_accessible_resources": [
       "data/customDomains.json"
