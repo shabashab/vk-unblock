@@ -1,9 +1,5 @@
 let App = {
-  cachedUid: null,
   mainProxyUrl: "https://vk.com/",
-  failedProxy: {},
-  triedProxy: {},
-  reservedTry: false,
   proxy: {
     scope: "regular",
     apply: async function (checkDomain) {
