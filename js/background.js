@@ -1,24 +1,9 @@
 let App = {
   cachedUid: null,
-  config: {
-    proxyString: "",
-    customDomains: [],
-    domains: [],
-    getAllDomains() {
-      return this.domains.concat(this.customDomains);
-    }
-  },
   mainProxyUrl: "https://vk.com/",
   failedProxy: {},
   triedProxy: {},
   reservedTry: false,
-  getVpnCfgDomain: function () {
-    return "https://check.proxy-config.com/";
-  },
-  getCfgUrl: function () {
-    let fileName = "configg.json";
-    return this.getVpnCfgDomain() + fileName;
-  },
   proxy: {
     scope: "regular",
     apply: async function (checkDomain) {
@@ -26,10 +11,7 @@ let App = {
       const settings = await this.getProxySettings();
       await this.setProxySettings(settings);
 
-      const connectivityStatus = await App.checkConnect({url: checkDomain});
-      App.loadReserve();
-
-      return connectivityStatus;
+      return await App.checkConnect({url: checkDomain});
     },
     setProxySettings: async function (value) {
       return new Promise((resolve) => {
@@ -55,8 +37,8 @@ let App = {
     getProxySettings: async function () {
       const scriptUrl = chrome.runtime.getURL("data/pacScript.pac");
 
-      const proxyString = App.proxyString;
-      const domains = JSON.stringify(App.config.getAllDomains());
+      const proxyString = Config.config.proxyString;
+      const domains = JSON.stringify(Config.config.getAllDomains());
 
       const response = await fetch(scriptUrl);
       let text = await response.text();
@@ -82,92 +64,26 @@ let App = {
       return false;
     }
   },
-  loadAsync: async function () {
-    let url = App.getCfgUrl();
-    let response = await fetch(url);
-    let configObject = await response.json();
-    this.config.domains = configObject.domains;
-    this.config.proxyString = configObject.proxy_string;
-    return configObject;
-  },
-  getStorage: async function () {
-    return new Promise((resolve) => {
-      chrome.storage.local.get("config", function (data) {
-        resolve(data.config || {});
-      });
-    });
-  },
-  setStorage: async function (config) {
-    return new Promise(((resolve) => {
-      chrome.storage.local.set(
-        {
-          config: config,
-        },
-        function () {
-          resolve(true);
-        }
-      );
-    }));
-  },
-  loadReserve: function () {
-    if (!App.proxyReserve) return;
-    if (App.reservedTry) return;
-    App.reservedTry = true;
-    try {
-      //const proxySettings =
-        JSON.parse(atob(App.proxyReserve));
-      //if (!proxySettings["data"]) return;
-    } catch (e) {
-    }
-  },
-  loadCustomDomains: async function () {
-    const url = chrome.runtime.getURL("data/customDomains.json");
-    const response = await fetch(url);
-    const json = await response.json();
-    this.config.customDomains = json.domains;
-  },
   init: async function () {
-    await this.loadCustomDomains();
+    await Config.loadCustomDomains();
     await this.addListeners();
 
-    const config = App.getStorage();
-
-    if (config.proxy_string && config.domains) {
-      App.config.proxyString = config.proxy_string;
-      App.config.domains = config.domains;
-
-      const proxyApplyResult = await App.proxy.apply(App.mainProxyUrl);
-      if (!proxyApplyResult) {
-        await App.loadAndApply(App.mainProxyUrl);
-      }
-    } else {
-      await App.loadAndApply(App.mainProxyUrl);
+    let proxyApplied = false;
+    if(await Config.loadFromStorageAndUpdateAsync()) {
+      proxyApplied = await App.proxy.apply(App.mainProxyUrl);
     }
 
-    if (config.proxy_reserve) {
-      App.proxyReserve = config.proxy_reserve;
-    } else {
-      setTimeout(function () {
-        App.loadProxyReserve();
-      }, 20 * 1000);
+    if(!proxyApplied)  {
+      await this.downloadConfigAndApplyProxy();
     }
   },
-  loadAndApply: async function (checkDomain) {
-    const conf = await App.loadAsync();
-    if (!conf.proxy_string || !conf.domains)
-      return;
-
-    App.proxyString = conf.proxy_string;
-    App.config.domains = conf.domains;
+  downloadConfigAndApplyProxy: async function (checkDomain) {
+    await Config.downloadAndUpdateAsync();
 
     const proxyApplied = await App.proxy.apply(checkDomain);
-    if (proxyApplied) {
-      await App.setStorage({
-        proxy_string: conf.proxy_string,
-        domains: conf.domains,
-        proxy_reserve: App.proxyReserve || conf.proxy_reserve,
-      });
-    }
+    if (proxyApplied)
+      await Config.saveToStorageAsync();
+
     return proxyApplied;
   },
   searchProxyInProgress: false,
@@ -186,7 +102,7 @@ let App = {
       }, 3600 * 1000);
     }
     App.globalSearchAttemptsCount++;
-    const result = await App.loadAndApply(forUrl);
+    const result = await App.downloadConfigAndApplyProxy(forUrl);
     if (result) {
       App.searchProxyInProgress = false;
       return true;
@@ -197,16 +113,6 @@ let App = {
     } else {
       App.searchProxyInProgress = false;
       return false;
-    }
-  },
-  loadProxyReserve: async function () {
-    if (!App.proxyReserve) {
-      const loadedConfig = await App.loadAsync();
-      if (loadedConfig && loadedConfig.proxy_reserve) {
-        const config = await App.getStorage();
-        config.proxy_reserve = loadedConfig.proxy_reserve;
-        await App.setStorage(config);
-      }
     }
   },
   addListeners: async function () {
