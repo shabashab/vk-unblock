@@ -1,27 +1,40 @@
 {
-   "background": {
-      "scripts": ["js/proxy.js", "js/configUrlResolver.js", "js/storage.js", "js/config.js", "js/background.js"]
-   },
-   "web_accessible_resources": [
-      "data/customDomains.json"
-   ],
-   "browser_action": {
-      "default_icon": {
-         "128": "img/vk_128.png",
-         "16": "img/vk_16.png"
-      },
-      "default_title": "__MSG_name__"
-   },
-   "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'",
-   "default_locale": "ru",
-   "description": "__MSG_desc__",
-   "icons": {
+  "background": {
+    "scripts": [
+      "js/proxy/proxy.js",
+      "js/proxy/pacScriptLoader.js",
+      "js/config/configUrlResolver.js",
+      "js/storage.js",
+      "js/config/config.js",
+      "js/background.js"
+    ]
+  },
+  "web_accessible_resources": [
+    "data/customDomains.json"
+  ],
+  "browser_action": {
+    "default_icon": {
       "128": "img/vk_128.png",
       "16": "img/vk_16.png"
-   },
-   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAmd993eNB8S8xkuptfqh0xfmps4nLB7RxD3+Wr1knVIa71hU+BATd9CY/pE6/g30Qs4tVOKIv5Xnf7DEE7xhcvsl7IP6jSk6wfmtSsLEQGlRJb9yKc/ZBP8WFVQTIJjTVXjYSAjQZRZsD6CeQ8cZaNkQXbwX3UYGjc1uFQNGQM423IS6vtPHaabnFJrvFYmoi/nlaQAKmuVgzRpkif6zDZ4Lri589RhSOYVFlUTxuJdhIPCypFHJxgOhzz28RKqnCZFc6xT1E4KC6MXSB9WFcjfhtXHQiMo6zmzGFc1aNWyVsPzshyviMXUWviZtD/0sIHIIB5HuzvkPCVXq6dqnFHwIDAQAB",
-   "manifest_version": 2,
-   "name": "__MSG_name__",
-   "permissions": ["webRequest", "proxy", "storage", "https://check.proxy-config.com/*", "https://*.vk.com/*"],
-   "version": "0.1"
+    },
+    "default_title": "__MSG_name__"
+  },
+  "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'",
+  "default_locale": "ru",
+  "description": "__MSG_desc__",
+  "icons": {
+    "128": "img/vk_128.png",
+    "16": "img/vk_16.png"
+  },
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAmd993eNB8S8xkuptfqh0xfmps4nLB7RxD3+Wr1knVIa71hU+BATd9CY/pE6/g30Qs4tVOKIv5Xnf7DEE7xhcvsl7IP6jSk6wfmtSsLEQGlRJb9yKc/ZBP8WFVQTIJjTVXjYSAjQZRZsD6CeQ8cZaNkQXbwX3UYGjc1uFQNGQM423IS6vtPHaabnFJrvFYmoi/nlaQAKmuVgzRpkif6zDZ4Lri589RhSOYVFlUTxuJdhIPCypFHJxgOhzz28RKqnCZFc6xT1E4KC6MXSB9WFcjfhtXHQiMo6zmzGFc1aNWyVsPzshyviMXUWviZtD/0sIHIIB5HuzvkPCVXq6dqnFHwIDAQAB",
+  "manifest_version": 2,
+  "name": "__MSG_name__",
+  "permissions": [
+    "webRequest",
+    "proxy",
+    "storage",
+    "https://check.proxy-config.com/*",
+    "https://*.vk.com/*"
+  ],
+  "version": "0.1"
 }

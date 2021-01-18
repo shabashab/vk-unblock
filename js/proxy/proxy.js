@@ -29,23 +29,14 @@ let Proxy = {
     );
   },
   getProxySettings: async function () {
-    const scriptUrl = chrome.runtime.getURL("data/pacScript.pac");
-
     const proxyString = Config.config.proxyString;
     const domains = JSON.stringify(Config.config.getAllDomains());
-
-    const response = await fetch(scriptUrl);
-    let text = await response.text();
-
-    text = text.replace(/\\\\proxyString\\\\/, proxyString);
-    text = text.replace(/'\\\\domains\\\\'/, domains);
 
     return {
       mode: "pac_script",
       pacScript: {
-        data: text
+        data: await PacScriptLoader.getPacScript(proxyString, domains)
       },
     };
-
   },
 };
