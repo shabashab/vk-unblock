@@ -1,13 +1,21 @@
 const gulp = require('gulp');
+
+//Node js modules
 const fs = require('fs');
+const rimraf = require('rimraf');
+
+//Gulp modules
 const concat = require('gulp-concat');
 const minify = require('gulp-minify');
-const rimraf = require('rimraf');
+const zip = require('gulp-zip');
+
+const packageInfo = require('./package.json');
 
 gulp.task('clear-dest', (done) => {
   rimraf.sync('dest/');
   done();
 });
+
 gulp.task('create-dest', (done) => {
   fs.mkdirSync("dest");
   done();
@@ -43,5 +51,11 @@ gulp.task('build:manifest', (done) => {
 
 gulp.task('build:dest', gulp.series(gulp.parallel('build:js', 'build:copy'), 'build:manifest'));
 
-gulp.task('build', gulp.series('build:pre', 'build:dest'));
+gulp.task('build:zip', () => {
+  return gulp.src('dest/**/*')
+    .pipe(zip(packageInfo.name + '_' + packageInfo.version + '.zip'))
+    .pipe(gulp.dest('build/'));
+})
+
+gulp.task('build', gulp.series('build:pre', 'build:dest'), 'build:zip');
 gulp.task('default', gulp.series('build'));

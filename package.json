@@ -1,5 +1,5 @@
 {
-  "name": "vk-unblock",
+  "name": "vk-unblock-chrome",
   "version": "0.2.1",
   "description": "VK unblock chrome extension",
   "main": "gulpfile.js",
@@ -7,16 +7,17 @@
     "type": "git",
     "url": "git+https://github.com/shabashab/vk-unblock.git"
   },
-  "author": "",
+  "author": "shabashab",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/shabashab/vk-unblock/issues"
   },
   "homepage": "https://github.com/shabashab/vk-unblock#readme",
-  "dependencies": {
+  "devDependencies": {
     "gulp": "^4.0.2",
     "gulp-concat": "^2.6.1",
     "gulp-minify": "^3.1.0",
+    "gulp-zip": "^5.0.2",
     "rimraf": "^3.0.2"
   }
 }
