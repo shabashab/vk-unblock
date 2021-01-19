@@ -1,5 +1,3 @@
 node_modules/
+dest/
 package-lock.json
-dist/
-vk-unblock.pem
-vk-unblock.crx
