@@ -15,6 +15,7 @@ const packageInfo = require('./package.json');
 const sourceDir   = packageInfo.buildConfig.sourceDir;
 const destDir     = packageInfo.buildConfig.destDir;
 const buildDir    = packageInfo.buildConfig.buildDir;
+const deleteDest  = packageInfo.buildConfig.deleteDest;
 
 //GULP TASKS
 
@@ -86,6 +87,14 @@ gulp.task('build:zip', () => {
     .pipe(gulp.dest(buildDir));
 });
 
+//Task that makes a cleanup after building the project
+gulp.task('build:cleanup', (done) => {
+  if(deleteDest)
+    rm.sync(destDir);
+
+  done();
+});
+
 //Task that builds the destination directory
 gulp.task(
   'build:dest',
@@ -103,7 +112,8 @@ gulp.task(
   gulp.series(
     'build:pre',
     'build:dest',
-    'build:zip')
+    'build:zip',
+    'build:cleanup')
 );
 
 //Default task that executes build task

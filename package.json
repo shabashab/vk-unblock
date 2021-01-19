@@ -23,6 +23,7 @@
   "buildConfig": {
     "sourceDir": "src/",
     "destDir": "dest/",
-    "buildDir": "build/"
+    "buildDir": "build/",
+    "deleteDest": true
   }
 }
