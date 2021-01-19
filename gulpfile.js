@@ -1,61 +1,110 @@
-const gulp = require('gulp');
+//MODULE IMPORTS
 
 //Node js modules
-const fs = require('fs');
-const rimraf = require('rimraf');
+const gulp    = require('gulp'),
+      fs      = require('fs'),
+      rm    = require('rimraf');
 
 //Gulp modules
-const concat = require('gulp-concat');
-const minify = require('gulp-minify');
-const zip = require('gulp-zip');
+const concat  = require('gulp-concat'),
+      minify  = require('gulp-minify'),
+      zip     = require('gulp-zip');
 
 const packageInfo = require('./package.json');
 
-gulp.task('clear-dest', (done) => {
-  rimraf.sync('dest/');
+const sourceDir   = packageInfo.buildConfig.sourceDir;
+const destDir     = packageInfo.buildConfig.destDir;
+const buildDir    = packageInfo.buildConfig.buildDir;
+
+//GULP TASKS
+
+//Task that runs before building project
+gulp.task('build:pre', (done) => {
+  //Delete dest dir recursively
+  rm.sync(destDir);
+  //Finish task
   done();
 });
 
-gulp.task('create-dest', (done) => {
-  fs.mkdirSync("dest");
-  done();
-});
-
-gulp.task('build:pre', gulp.series('clear-dest', 'create-dest'));
-
+//Task that builds javascript files and concatenates them in one minified file
 gulp.task('build:js', () => {
-  const text = fs.readFileSync("src/manifest.json").toString('utf-8');
-  const files = JSON.parse(text).background.scripts;
+  //Load manifest file from source directory
+  const manifest = require('./' + sourceDir + 'manifest.json');
 
-  for(let i = 0; i < files.length; i++)
-    files[i] = "src/" + files[i];
+  //Get js scripts from manifest paths
+  const jsScripts = manifest.background.scripts;
 
-  return gulp.src(files)
+  //Add src/ to each script path
+  for(let i = 0; i < jsScripts.length; i++)
+    jsScripts[i] = sourceDir + jsScripts[i];
+
+  //Load js scripts
+  return gulp.src(jsScripts)
+    //Concat all scripts into one file in order specified in manifest
     .pipe(concat('background.js'))
+    //Minify concatenated file
     .pipe(minify())
-    .pipe(gulp.dest('dest/js'));
+    //Output to dest/js folder
+    .pipe(gulp.dest(destDir + '/js'));
 });
 
+//Task that copies other files into destination directory
 gulp.task('build:copy', () => {
-  return gulp.src('src/!(js)/**/*')
-    .pipe(gulp.dest('dest/'));
+  //Load all files from source except ones that are in js/ directory
+  return gulp.src(sourceDir + '!(js)/**/*')
+    //Output into destination folder
+    .pipe(gulp.dest(destDir));
 });
 
+//Task that builds the manifest file
 gulp.task('build:manifest', (done) => {
-  const text = fs.readFileSync("src/manifest.json").toString('utf-8');
-  let manifest = JSON.parse(text);
+  //Load manifest file from src/
+  const manifest = require('./' + sourceDir + 'manifest.json');
+  //Change manifest background scripts list to one file that we create with build:js task
   manifest.background.scripts = ['js/background-min.js'];
-  fs.writeFileSync('dest/manifest.json', JSON.stringify(manifest));
+  //Write new manifest.json into destination directory
+  fs.writeFileSync(destDir + 'manifest.json', JSON.stringify(manifest));
+  //Finish task
   done();
 });
 
-gulp.task('build:dest', gulp.series(gulp.parallel('build:js', 'build:copy'), 'build:manifest'));
+//Task that makes a cleanup after building dest directory
+gulp.task('build:dest:cleanup', (done) => {
+  //Delete non-minified background.js
+  fs.unlinkSync(destDir + 'js/background.js');
+  //Finish the task
+  done();
+});
 
+//Task that makes the zip file from the files located in destination directory
 gulp.task('build:zip', () => {
-  return gulp.src('dest/**/*')
+  //Load all files from dest directory
+  return gulp.src(destDir + '**/*')
+    //Pack them into a zip archive
     .pipe(zip(packageInfo.name + '_' + packageInfo.version + '.zip'))
-    .pipe(gulp.dest('build/'));
-})
+    //Output to build folder
+    .pipe(gulp.dest(buildDir));
+});
 
-gulp.task('build', gulp.series('build:pre', 'build:dest'), 'build:zip');
+//Task that builds the destination directory
+gulp.task(
+  'build:dest',
+  gulp.series(
+    gulp.parallel(
+      'build:js',
+      'build:copy'),
+    'build:manifest',
+    'build:dest:cleanup')
+);
+
+//Task that builds the project and compresses it into a zip file
+gulp.task(
+  'build',
+  gulp.series(
+    'build:pre',
+    'build:dest',
+    'build:zip')
+);
+
+//Default task that executes build task
 gulp.task('default', gulp.series('build'));
